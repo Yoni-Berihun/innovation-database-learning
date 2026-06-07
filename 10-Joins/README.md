@@ -1,8 +1,6 @@
-# Module 10: SQL Joins in PostgreSQL
+ SQL Joins in PostgreSQL
 
-&gt; **Skill Level:** Beginner  
 &gt; **Prerequisite:** Module 9 (Filtering Data with `WHERE`)  
-&gt; **Estimated Time:** 2–3 hours
 
 ---
 
