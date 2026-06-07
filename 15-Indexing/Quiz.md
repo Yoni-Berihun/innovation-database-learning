@@ -1,266 +1,225 @@
-# Module 15: Exercises — Indexing in PostgreSQL
+# Module 15: Quiz — Indexing in PostgreSQL
 
-> **Instructions:** Write the SQL for each exercise. Use the University Management System schema. Test your queries in a local PostgreSQL instance.
+> **Instructions:** Answer the following questions to check your understanding. Answers and explanations are hidden under each question button.
 
 ---
 
-## 🟢 Easy Exercises
+## 🔄 True or False
 
-### Exercise 1
-**Task:** Create an index on the `last_name` column of the `students` table to speed up name searches.
+### Question 1
+An index stores a complete copy of the table data.
+
+- [ ] True
+- [x] False
 
 <details>
-<summary><b>🔍 Show Answer</b></summary>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
 
-```sql
-CREATE INDEX idx_students_last_name ON students(last_name);
-```
-* **Explanation:** This sets up a standard B-tree index on the `last_name` column, enabling the database to avoid full table scans when looking up students by their surname.
+* **Correct Answer:** **False**
+* **Why:** An index does not duplicate the full table data. Instead, it stores a optimized mapping of specific column values along with physical pointers (row identifiers/TIDs) that tell PostgreSQL exactly where the corresponding row lives on disk.
 </details>
 
 ---
 
-### Exercise 2
-**Task:** Create a unique index on the `email` column of the `students` table to enforce uniqueness and speed up email lookups.
+### Question 2
+Creating too many indexes can slow down INSERT and UPDATE operations.
+
+- [x] True
+- [ ] False
 
 <details>
-<summary><b>🔍 Show Answer</b></summary>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
 
-```sql
-CREATE UNIQUE INDEX idx_students_email ON students(email);
-```
-* **Explanation:** A unique index accelerates search speeds while simultaneously enforcing data integrity by blocking any duplicate email entries.
+* **Correct Answer:** **True**
+* **Why:** Every index comes with a write overhead cost. Whenever you run an `INSERT`, `UPDATE`, or `DELETE` transaction, PostgreSQL must update the underlying table data and immediately restructure or re-balance all related index trees.
 </details>
 
 ---
 
-### Exercise 3
-**Task:** Safely drop the index `idx_students_last_name` if it exists.
+### Question 3
+A multicolumn index on `(A, B)` can speed up queries that filter on `B` alone.
+
+- [ ] True
+- [x] False
 
 <details>
-<summary><b>🔍 Show Answer</b></summary>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
 
-```sql
-DROP INDEX IF EXISTS idx_students_last_name;
-```
-* **Explanation:** Adding the `IF EXISTS` clause prevents PostgreSQL from throwing an error if the index has already been dropped or does not exist.
+* **Correct Answer:** **False**
+* **Why:** Multicolumn indexes are order-dependent. PostgreSQL sorts the tree by the first column (`A`), and then by the second column (`B`) within groups of `A`. A query filtering strictly on `B` alone cannot navigate this hierarchy and will default to a sequential scan.
 </details>
 
 ---
 
-### Exercise 4
-**Task:** Run `EXPLAIN` on the following query and identify whether it uses a full table scan or an index scan (assume the index from Exercise 1 exists).
-```sql
-SELECT * FROM students WHERE last_name = 'Smith';
-```
+### Question 4
+`EXPLAIN ANALYZE` actually runs the query and shows real execution time.
+
+- [x] True
+- [ ] False
 
 <details>
-<summary><b>🔍 Show Answer</b></summary>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
 
-```sql
-EXPLAIN SELECT * FROM students WHERE last_name = 'Smith';
-```
+* **Correct Answer:** **True**
+* **Why:** While a basic `EXPLAIN` only outputs structural estimations, appending `ANALYZE` forces PostgreSQL to execute the statement entirely, capturing actual runtime measurements and loop data (use with caution on large `DELETE` operations!).
+</details>
 
-#### Expected output (with index):
+---
+
+### Question 5
+A partial index is smaller than a full index because it only indexes a subset of rows.
+
+- [x] True
+- [ ] False
+
+<details>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
+
+* **Correct Answer:** **True**
+* **Why:** A partial index includes a `WHERE` clause that restricts index membership. Because it ignores records that don't match the condition, it occupies less disk space and stays highly cached.
+</details>
+
+---
+
+## 🔘 Multiple Choice
+
+### Question 6
+What is PostgreSQL's default index type?
+
+- [ ] A) Hash
+- [x] B) B-tree
+- [ ] C) GIN
+- [ ] D) GiST
+
+<details>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
+
+* **Correct Answer:** **B) B-tree**
+* **Why:** The B-tree (Balanced Tree) data structure is PostgreSQL's highly reliable default index type. It handles equality, range, sorting, and specific wildcard lookups efficiently.
+</details>
+
+---
+
+### Question 7
+Which of the following is the best reason to create an index?
+
+- [ ] A) To store backup copies of table data.
+- [x] B) To speed up SELECT queries that filter on a specific column.
+- [ ] C) To prevent duplicate rows from being inserted.
+- [ ] D) To automatically sort data in the table.
+
+<details>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
+
+* **Correct Answer:** **B) To speed up SELECT queries that filter on a specific column.**
+* **Why:** The primary role of an index is performance acceleration. It allows search queries to isolate target records quickly without evaluating every row in the file.
+</details>
+
+---
+
+### Question 8
+You run `EXPLAIN` and see `Seq Scan on students`. What does this mean?
+
+- [ ] A) PostgreSQL is using an index to find the rows.
+- [x] B) PostgreSQL is reading every row in the table.
+- [ ] C) PostgreSQL is skipping the table entirely.
+- [ ] D) PostgreSQL is using a cached result.
+
+<details>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
+
+* **Correct Answer:** **B) PostgreSQL is reading every row in the table.**
+* **Why:** A Sequential Scan (`Seq Scan`) represents a full table scan. The query planner has decided to read the entire table structure from top to bottom on disk, either because an index does not exist or wouldn't be useful.
+</details>
+
+---
+
+### Question 9
+What is a "covering index"?
+
+- [ ] A) An index that covers all columns in the table.
+- [x] B) An index that contains all columns needed by a query, so the table does not need to be accessed.
+- [ ] C) An index that protects the table from deletion.
+- [ ] D) An index that automatically updates itself.
+
+<details>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
+
+* **Correct Answer:** **B) An index that contains all columns needed by a query, so the table does not need to be accessed.**
+* **Why:** A covering index allows for an **Index Only Scan**. Since the index leaf nodes already hold every field requested by the `SELECT` query, PostgreSQL can return results directly without wasting time performing heap lookups on the main table blocks.
+</details>
+
+---
+
+### Question 10
+Which command rebuilds a bloated index?
+
+- [ ] A) `REBUILD INDEX index_name;`
+- [x] B) `REINDEX INDEX index_name;`
+- [ ] C) `REFRESH INDEX index_name;`
+- [ ] D) `RECREATE INDEX index_name;`
+
+<details>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
+
+* **Correct Answer:** **B) REINDEX INDEX index_name;**
+* **Why:** Massive data updates cause index page fragmentation (bloat) over time. The explicit command `REINDEX` reconstructs a clean, fresh, defragmented version of the index tree structure.
+</details>
+
+---
+
+## ✏️ Fill in the Blank
+
+### Question 11
+The SQL command to create an index on the `email` column of the `students` table is: `CREATE _______ idx_email ON students(email);`
+
 ```text
-Index Scan using idx_students_last_name on students
-  Index Cond: (last_name = 'Smith'::text)
+INDEX
 ```
 
-#### If no index exists, you would see:
+<details>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
+
+* **Correct Answer:** `INDEX`
+* **Why:** The standard ANSI SQL definition format relies on the explicit declaration `CREATE INDEX` to declare and build independent index catalog configurations.
+</details>
+
+---
+
+### Question 12
+To see whether PostgreSQL uses an index for a query, you can run `_______ ANALYZE SELECT ...`
+
 ```text
-Seq Scan on students
-  Filter: (last_name = 'Smith'::text)
-```
-* **Explanation:** `EXPLAIN` reveals the query planner's roadmap. An `Index Scan` points to fast lookup utilization, whereas a `Seq Scan` signifies a slower full table scan.
-</details>
-
----
-
-### Exercise 5
-**Task:** Create an index on the `student_id` column of the `enrollments` table to speed up joins with the `students` table.
-
-<details>
-<summary><b>🔍 Show Answer</b></summary>
-
-```sql
-CREATE INDEX idx_enrollments_student_id ON enrollments(student_id);
-```
-* **Explanation:** Indexing foreign keys like `student_id` inside mapping tables is a core production rule to heavily optimize `JOIN` execution routines.
-</details>
-
----
-
-## 🟡 Medium Exercises
-
-### Exercise 6
-**Task:** Create a multicolumn index on `enrollments(student_id, course_id)` to speed up queries that check for duplicate enrollments.
-
-<details>
-<summary><b>🔍 Show Answer</b></summary>
-
-```sql
-CREATE INDEX idx_enrollments_student_course ON enrollments(student_id, course_id);
-```
-* **Explanation:** This indexes both parameters in a shared tree array, speeding up compound search filters targeting student registration anomalies.
-</details>
-
----
-
-### Exercise 7
-**Task:** Create a partial index on `enrollments(student_id)` that only includes rows where `status = 'Active'`.
-
-<details>
-<summary><b>🔍 Show Answer</b></summary>
-
-```sql
-CREATE INDEX idx_active_enrollments ON enrollments(student_id)
-WHERE status = 'Active';
-```
-* **Explanation:** By dropping historical or inactive data elements from the index map, a partial index stays remarkably lightweight and efficient.
-</details>
-
----
-
-### Exercise 8
-**Task:** Write two queries: one to find all grades for `student_id = 5` using `EXPLAIN ANALYZE`. First, run it without an index on `grades(student_id)`. Then create the index and run it again. Compare the execution times.
-
-<details>
-<summary><b>🔍 Show Answer</b></summary>
-
-```sql
--- Step 1: Run without index
-EXPLAIN ANALYZE
-SELECT * FROM grades WHERE student_id = 5;
-
--- Step 2: Create the index
-CREATE INDEX idx_grades_student_id ON grades(student_id);
-
--- Step 3: Run again with index
-EXPLAIN ANALYZE
-SELECT * FROM grades WHERE student_id = 5;
-```
-* **Expected observation:** The second execution report will showcase an `Index Scan` block instead of a `Seq Scan`, accompanied by a significantly lower execution time metric.
-</details>
-
----
-
-### Exercise 9
-**Task:** Create an index that helps speed up the following query:
-```sql
-SELECT * FROM students ORDER BY last_name, first_name;
+EXPLAIN
 ```
 
 <details>
-<summary><b>🔍 Show Answer</b></summary>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
 
-```sql
-CREATE INDEX idx_students_name_sort ON students(last_name, first_name);
-```
-* **Explanation:** Indexes naturally store structured records in predefined, sorted orders. This index completely eliminates the need for expensive in-memory sorting operations during query execution.
+* **Correct Answer:** `EXPLAIN`
+* **Why:** Prepended to execution statements, `EXPLAIN` commands the optimizer engine to breakdown execution costs, join strategies, and scanning metrics.
 </details>
 
 ---
 
-### Exercise 10
-**Task:** A table already has `UNIQUE(email)` on the `students` table. Write a query to check if PostgreSQL automatically created an index for this constraint.
+## ✍️ Short Answer
+
+### Question 13
+Explain in 2–3 sentences why you should not index a boolean column like `is_active` that has only two possible values.
 
 <details>
-<summary><b>🔍 Show Answer</b></summary>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
 
-```sql
-\d students
--- Or query system tables:
-SELECT indexname, indexdef
-FROM pg_indexes
-WHERE tablename = 'students';
-```
-* **Expected observation:** You will find an automated index record object named something like `students_email_key`. PostgreSQL deploys this underneath the hood to track uniqueness parameters implicitly.
+* **Answer:** A boolean column exhibits low cardinality (only holding true/false statuses). An index tree under these conditions splits into two massive branches, meaning an index scan will still point to roughly half the physical database blocks. Because the overhead of maintaining the index outweighs any potential search performance gain, a standard sequential scan is almost always faster.
 </details>
 
 ---
 
-## 🔴 Challenging Exercises
-
-### Exercise 11
-**Task:** The university registrar runs a dashboard with these frequent queries:
-1. Find all students in a specific department.
-2. Find all courses taught by a specific instructor.
-3. Find all enrollments for a specific student in a specific semester.
-4. Find all grades above 90 for a specific course.
-
-Write `CREATE INDEX` statements for each query scenario.
+### Question 14
+A university portal searches for students by `last_name` 1,000 times per day, but only adds 5 new students per day. Should you create an index on `last_name`? Why or why not?
 
 <details>
-<summary><b>🔍 Show Answer</b></summary>
+<summary><b>🔍 Show Answer & Explanation</b></summary>
 
-```sql
--- Query 1: Find all students in a specific department
-CREATE INDEX idx_students_department ON students(department_id);
-
--- Query 2: Find all courses taught by a specific instructor
-CREATE INDEX idx_courses_instructor ON courses(instructor_id);
-
--- Query 3: Find all enrollments for a specific student in a specific semester
-CREATE INDEX idx_enrollments_student_semester ON enrollments(student_id, semester);
-
--- Query 4: Find all grades above 90 for a specific course
--- Index the foreign key linking field first
-CREATE INDEX idx_grades_enrollment ON grades(enrollment_id);
--- Then optimize high score scans using a focused partial index
-CREATE INDEX idx_high_grades ON grades(enrollment_id, numeric_grade)
-WHERE numeric_grade > 90;
-```
+* **Answer:** Yes, you should create an index on `last_name`. The system exhibits a heavy read-to-write ratio (1,000 lookups versus only 5 insertions daily). The immense time savings provided by accelerating those 1,000 read queries far outweighs the minor processing cost introduced during the 5 student registration operations.
 </details>
-
----
-
-### Exercise 12
-**Task:** A developer wants to create indexes on every column of the `students` table. Write a short paragraph (2–3 sentences) explaining why this is a bad idea, specifically mentioning `INSERT` and `UPDATE` performance.
-
-<details>
-<summary><b>🔍 Show Answer</b></summary>
-
-* **Sample Answer:** Indexing every single column slows down database writes significantly. Every time an application triggers an `INSERT` or `UPDATE` transaction, PostgreSQL must update the core physical row data while simultaneously rebuilding every single affected index map tree. Furthermore, columns that are rarely referenced in search filters end up wasting vast amounts of disk space without offering any practical optimization advantages.
-</details>
-
----
-
-### Exercise 13
-**Task:** The following query is run very frequently:
-```sql
-SELECT student_id, last_name FROM students WHERE last_name = 'Smith';
-```
-Explain why an index on `last_name` alone is sufficient, but an index on `(last_name, student_id)` would be even better (a "covering index").
-
-<details>
-<summary><b>🔍 Show Answer</b></summary>
-
-* **Explanation:** An index built solely on `last_name` pinpoints targeted rows efficiently but still forces PostgreSQL to perform an internal table lookup to retrieve the corresponding `student_id` field values. Upgrading to a compound index on `(last_name, student_id)` creates a **Covering Index**. This structure contains 100% of the data parameters requested by the query, allowing the database engine to fulfill the request entirely within the index tree scan without ever touching the underlying physical table files.
-```sql
-CREATE INDEX idx_students_covering ON students(last_name, student_id);
-```
-</details>
-
----
-
-### Exercise 14
-**Task:** Write a query against PostgreSQL system catalogs to find indexes on the `students` table that have never been scanned.
-
-<details>
-<summary><b>🔍 Show Answer</b></summary>
-
-```sql
-SELECT
-    schemaname,
-    tablename,
-    indexname,
-    idx_scan
-FROM pg_stat_user_indexes
-WHERE tablename = 'students'
-  AND idx_scan = 0;
-```
-* **Interpretation:** If the `idx_scan` metric stands at `0`, it means the index object has never been utilized by the system planner. You should safely consider dropping it in production environments to conserve disk write and processing overhead.
-</details>
-
----
